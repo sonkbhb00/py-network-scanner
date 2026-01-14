@@ -2,6 +2,7 @@ import argparse
 import socket
 import threading
 from scanner import TCP_Full_Scan
+from scanner import SYN_Stealth_Scan
 
 def main():
     parser = argparse.ArgumentParser(description="A port scanner.")
