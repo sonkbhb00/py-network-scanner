@@ -4,9 +4,8 @@ import threading
 from scanner import TCP_Full_Scan, SYN_Stealth_Scan
 
 def main():
-    parser = argparse.ArgumentParser(description="A port scanner.")
+    parser = argparse.ArgumentParser()
     
-    # Target là positional argument (phải đặt đầu tiên)
     parser.add_argument("target", nargs="?", help="Target IP address or hostname to scan.")
     
     # Group for scan types
@@ -17,8 +16,8 @@ def main():
     scan_group.add_argument("-sN", action="store_true", help="Null scan")
     scan_group.add_argument("-sX", action="store_true", help="Xmas scan")
     
-    parser.add_argument("-p", "--ports", help="Comma-separated list of ports to scan.", default=None)
-    parser.add_argument("-t", "--threads", help="Number of threads to use for scanning.", type=int, default=10)
+    parser.add_argument("-p", "--ports", nargs="?", help="Comma-separated list of ports to scan.", default=None)
+    parser.add_argument("-t", "--threads", nargs="?", help="Number of threads to use for scanning.", type=int, default=10)
     
     args = parser.parse_args()
     
