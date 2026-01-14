@@ -1,6 +1,8 @@
 import argparse
 import socket
 import threading
+from scanner import TCP_Full_Scan
+
 def main():
     parser = argparse.ArgumentParser(description="A port scanner.")
     
@@ -8,6 +10,22 @@ def main():
     parser.add_argument("target", help="Target IP address or hostname to scan.")
     parser.add_argument("-p", "--ports", help="Comma-separated list of ports to scan.", default=ports_to_scan())
     parser.add_argument("-thead", "--threads", help="Number of threads to use for scanning.", type=int, default=10)
+    
+    
+    if args.target.replace('.', '').isdigit():
+        args.target = args.target
+    else:
+        args.target = domain_to_ip(args.target)
+    
+    
+    if args.ports: 
+        ports = [int(p.strip()) for p in args.ports.split(",") if p.strip().isdigit()]
+    else: 
+        ports = ports_to_scan()
+        
+    args = parser.parse_args()
+    
+
 
 def ports_to_scan():
     with open('1000-Common-Ports.txt', 'r') as f:
@@ -15,6 +33,8 @@ def ports_to_scan():
 
 def domain_to_ip(domain):
     return socket.gethostbyname(domain)
+
+
 
 if __name__ == "__main__":
     main()
