@@ -6,12 +6,23 @@ from scanner import TCP_Full_Scan, SYN_Stealth_Scan
 def main():
     parser = argparse.ArgumentParser(description="A port scanner.")
     
-    parser.add_argument("-m", "--mode", help="Scan mode Connect, Syn, Ack, Null, Xmas.", choices=["Connect", "Syn", "Ack", "Null", "Xmas"], default="Connect")
-    parser.add_argument("target", help="Target IP address or hostname to scan.")
+    # Target là positional argument (phải đặt đầu tiên)
+    parser.add_argument("target", nargs="?", help="Target IP address or hostname to scan.")
+    
+    # Group for scan types
+    scan_group = parser.add_mutually_exclusive_group()
+    scan_group.add_argument("-sT", action="store_true", help="TCP Connect scan (default)")
+    scan_group.add_argument("-sS", action="store_true", help="SYN Stealth scan")
+    scan_group.add_argument("-sA", action="store_true", help="ACK scan")
+    scan_group.add_argument("-sN", action="store_true", help="Null scan")
+    scan_group.add_argument("-sX", action="store_true", help="Xmas scan")
+    
     parser.add_argument("-p", "--ports", help="Comma-separated list of ports to scan.", default=None)
     parser.add_argument("-t", "--threads", help="Number of threads to use for scanning.", type=int, default=10)
     
     args = parser.parse_args()
+    
+
     
     if args.target.replace('.', '').isdigit():
         args.target = args.target
@@ -25,15 +36,12 @@ def main():
         ports = ports_to_scan()
     
     print(f"Scanning {args.target} on {len(ports)} ports...")
-    print(f"Mode: {args.mode}")
+    print(f"Mode: {'TCP Connect Scan' if args.sT else 'SYN Stealth Scan' if args.sS else 'Other Scan Type'}")
     
-    if args.mode == "Connect":
+    if args.sT:
         open_ports = TCP_Full_Scan(args.target, ports)
-    elif args.mode == "Syn":
+    elif args.sS:
         open_ports = SYN_Stealth_Scan(args.target, ports)
-    else:
-        print(f"Mode {args.mode} is not implemented yet.")
-        return
     
     print(f"\nScan complete!")
     print(f"Open ports: {open_ports if open_ports else 'None'}")
