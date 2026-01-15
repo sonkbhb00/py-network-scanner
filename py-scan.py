@@ -40,7 +40,11 @@ def main():
         ports = ports_to_scan()
     
     print(f"Scanning {args.target} on {len(ports)} ports...")
-    print(f"Mode: {'TCP Connect Scan' if args.sT else 'SYN Stealth Scan' if args.sS else 'Other Scan Type'}")
+    print(f"Mode: {'TCP Connect Scan' if args.sT else \
+          'SYN Stealth Scan' if args.sS else \
+          'ACK Scan' if args.sA else \
+          'Null Scan' if args.sN else \
+          'Xmas Scan'}")
     
     if args.sT:
         open_ports = TCP_Full_Scan(args.target, ports)
