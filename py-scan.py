@@ -1,8 +1,9 @@
 import argparse
+import os
 import socket
 import threading
 
-from scanner import TCP_Full_Scan, SYN_Stealth_Scan
+from scanner import TCP_Full_Scan, SYN_Stealth_Scan, Ack_Full_Scan, Xmas_Scan
 
 
 def main():
@@ -15,7 +16,7 @@ def main():
     scan_group.add_argument("-sT", action="store_true", help="TCP Connect scan (default)")
     scan_group.add_argument("-sS", action="store_true", help="SYN Stealth scan")
     scan_group.add_argument("-sA", action="store_true", help="ACK scan")
-    scan_group.add_argument("-sN", action="store_true", help="Null scan")
+    scan_group.add_argument("-sN", action="store_true", help="Null scan(only for Linux )")
     scan_group.add_argument("-sX", action="store_true", help="Xmas scan")
     
     parser.add_argument("-p", "--ports", help="Comma-separated list of ports to scan.", default=None)
@@ -28,7 +29,7 @@ def main():
     
     # Resolve hostname to IP if necessary
     try:
-        args.target = socket.gethostbyname(args.target) 
+        args.target = domain_to_ip(args.target)
     except socket.gaierror:
         print(f"Error: Cannot resolve hostname '{args.target}'")
         return
@@ -48,15 +49,27 @@ def main():
     
     if args.sT:
         open_ports = TCP_Full_Scan(args.target, ports)
+        print(f"\nScan complete!")
+        print(f"Open ports: {open_ports if open_ports else 'None'}")
     elif args.sS:
         open_ports = SYN_Stealth_Scan(args.target, ports)
-    
-    print(f"\nScan complete!")
-    print(f"Open ports: {open_ports if open_ports else 'None'}")
-
+        print(f"\nScan complete!")
+        print(f"Open ports: {open_ports if open_ports else 'None'}")
+    elif args.sA:
+        unfiltered_ports, filtered_ports = Ack_Full_Scan(args.target, ports)
+        print(f"\nScan complete!")
+        print(f"Unfiltered ports: {unfiltered_ports if unfiltered_ports else 'None'}")
+        print(f"Filtered ports: {filtered_ports if filtered_ports else 'None'}")
+    elif args.sX:
+        closed_ports, open_filtered_ports = Xmas_Scan(args.target, ports)
+        print(f"\nScan complete!")
+        print(f"Closed ports: {closed_ports if closed_ports else 'None'}")
+        print(f"Open|Filtered ports: {open_filtered_ports if open_filtered_ports else 'None'}")
 
 def ports_to_scan():
-    with open('1000-Common-Ports.txt', 'r') as f:
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    file_path = os.path.join(script_dir, '1000-Common-Ports.txt')
+    with open(file_path, 'r') as f:
         return [int(line.strip()) for line in f.readlines() if line.strip().isdigit()]
 
 def domain_to_ip(domain):
@@ -66,4 +79,3 @@ def domain_to_ip(domain):
 
 if __name__ == "__main__":
     main()
-    
