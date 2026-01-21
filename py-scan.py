@@ -20,10 +20,44 @@ def main():
     scan_group.add_argument("-sX", action="store_true", help="Xmas scan")
     
     parser.add_argument("-p", "--ports", help="Comma-separated list of ports to scan.", default=None)
-    parser.add_argument("-t", "--threads", help="Number of threads to use for scanning.", type=int, default=10)
     parser.add_argument("-sV", "--version", action="store_true", help="Version detection - probe open ports to determine service/version info")
     
+    # Timing templates (like Nmap)
+    timing_group = parser.add_mutually_exclusive_group()
+    timing_group.add_argument("-T0", action="store_const", const=0, dest="timing", help="Paranoid (serial, 5min timeout) - IDS evasion")
+    timing_group.add_argument("-T1", action="store_const", const=1, dest="timing", help="Sneaky (serial, 15s timeout) - IDS evasion")
+    timing_group.add_argument("-T2", action="store_const", const=2, dest="timing", help="Polite (serial, 1s timeout) - Less bandwidth")
+    timing_group.add_argument("-T3", action="store_const", const=3, dest="timing", help="Normal (parallel, 1s timeout) - Default")
+    timing_group.add_argument("-T4", action="store_const", const=4, dest="timing", help="Aggressive (parallel, 0.5s timeout) - Fast scan")
+    timing_group.add_argument("-T5", action="store_const", const=5, dest="timing", help="Insane (parallel, 0.3s timeout) - Very fast")
+    
+    # Manual overrides
+    parser.add_argument("--max-delay", type=float, help="Max delay between probes (seconds)", default=None)
+    parser.add_argument("--timeout", type=float, help="Timeout for connections (seconds)", default=None)
+    
     args = parser.parse_args()
+    
+    # Set default timing to T3 (Normal)
+    if args.timing is None:
+        args.timing = 3
+    
+    # Configure timing parameters based on template
+    timing_configs = {
+        0: {"parallel": False, "timeout": 300, "delay": 5.0, "name": "Paranoid (T0)"},
+        1: {"parallel": False, "timeout": 15, "delay": 1.5, "name": "Sneaky (T1)"},
+        2: {"parallel": False, "timeout": 2.5, "delay": 0.4, "name": "Polite (T2)"},
+        3: {"parallel": True, "timeout": 1.0, "delay": 0, "name": "Normal (T3)"},
+        4: {"parallel": True, "timeout": 0.5, "delay": 0, "name": "Aggressive (T4)"},
+        5: {"parallel": True, "timeout": 0.3, "delay": 0, "name": "Insane (T5)"},
+    }
+    
+    config = timing_configs[args.timing]
+    
+    # Apply manual overrides
+    if args.timeout is not None:
+        config["timeout"] = args.timeout
+    if args.max_delay is not None:
+        config["delay"] = args.max_delay
     
     if not any([args.sT, args.sS, args.sA, args.sN, args.sX]):
         args.sT = True  # Default to TCP Connect scan if no scan type is specified.
@@ -47,31 +81,33 @@ def main():
           'ACK Scan' if args.sA else \
           'Null Scan' if args.sN else \
           'Xmas Scan'}")
+    print(f"Timing: {config['name']} (timeout: {config['timeout']}s, delay: {config['delay']}s)")
+    print()
     
     if args.sT:
-        open_ports = TCP_Full_Scan(args.target, ports)
+        open_ports = TCP_Full_Scan(args.target, ports, timeout=config['timeout'], delay=config['delay'], parallel=config['parallel'])
         print(f"\nScan complete!")
         print(f"Open ports: {open_ports if open_ports else 'None'}")
         if args.version and open_ports:
             print_banners(args.target, open_ports)
     elif args.sS:
-        open_ports = SYN_Stealth_Scan(args.target, ports)
+        open_ports = SYN_Stealth_Scan(args.target, ports, timeout=config['timeout'], delay=config['delay'], parallel=config['parallel'])
         print(f"\nScan complete!")
         print(f"Open ports: {open_ports if open_ports else 'None'}")
         if args.version and open_ports:
             print_banners(args.target, open_ports)
     elif args.sA:
-        unfiltered_ports, filtered_ports = Ack_Full_Scan(args.target, ports)
+        unfiltered_ports, filtered_ports = Ack_Full_Scan(args.target, ports, timeout=config['timeout'], delay=config['delay'], parallel=config['parallel'])
         print(f"\nScan complete!")
         print(f"Unfiltered ports: {unfiltered_ports if unfiltered_ports else 'None'}")
         print(f"Filtered ports: {filtered_ports if filtered_ports else 'None'}")
     elif args.sX:
-        closed_ports, open_filtered_ports = Xmas_Scan(args.target, ports)
+        closed_ports, open_filtered_ports = Xmas_Scan(args.target, ports, timeout=config['timeout'], delay=config['delay'], parallel=config['parallel'])
         print(f"\nScan complete!")
         print(f"Closed ports: {closed_ports if closed_ports else 'None'}")
         print(f"Open|Filtered ports: {open_filtered_ports if open_filtered_ports else 'None'}")
     elif args.sN:
-        closed_ports, open_filtered_ports, filtered_ports = Null_Scan(args.target, ports)
+        closed_ports, open_filtered_ports, filtered_ports = Null_Scan(args.target, ports, timeout=config['timeout'], delay=config['delay'], parallel=config['parallel'])
         print(f"\nScan complete!")
         print(f"Closed ports: {closed_ports if closed_ports else 'None'}")
         print(f"Open|Filtered ports: {open_filtered_ports if open_filtered_ports else 'None'}")
