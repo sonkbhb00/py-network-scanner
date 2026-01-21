@@ -1,5 +1,6 @@
 import socket
 import ssl
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 def try_probe():
     return b"HEAD / HTTP/1.0\r\n\r\n"
@@ -80,10 +81,26 @@ def grab_https_banner(ip_address, port):
         return f"HTTPS error: {e}"
 
 
-def grab_banners(ip, ports):
+def grab_banners(ip, ports, max_workers=10):
+
     results = {}
-    for port in ports:
-        banner = grab_banner(ip, port)
-        if banner and not banner.startswith("Connection failed") and not banner.startswith("HTTPS error"):
-            results[port] = banner
+    
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        # Submit all banner grabbing tasks
+        future_to_port = {
+            executor.submit(grab_banner, ip, port): port 
+            for port in ports
+        }
+        
+        # Collect results as they complete
+        for future in as_completed(future_to_port):
+            port = future_to_port[future]
+            try:
+                banner = future.result()
+                if banner and not banner.startswith("Connection failed") and not banner.startswith("HTTPS error"):
+                    results[port] = banner
+            except Exception:
+                # Skip ports that raise exceptions
+                pass
+    
     return results

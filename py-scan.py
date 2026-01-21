@@ -23,7 +23,7 @@ def main():
     parser.add_argument("-p", "--ports", help="Comma-separated list of ports to scan.", default=None)
     parser.add_argument("-sV", "--version", action="store_true", help="Version detection - probe open ports to determine service/version info")
     
-    # Timing templates (like Nmap)
+    # Timing templates 
     timing_group = parser.add_mutually_exclusive_group()
     timing_group.add_argument("-T0", action="store_const", const=0, dest="timing", help="Paranoid (serial, 5min timeout) - IDS evasion")
     timing_group.add_argument("-T1", action="store_const", const=1, dest="timing", help="Sneaky (serial, 15s timeout) - IDS evasion")
